@@ -1,31 +1,34 @@
 package main
 
-func (u User) SendMessage(message string, messageLength int) (string, bool) {
-	if u.MessageCharLimit >= messageLength {
-		return message, true
-	}
-	return "", false
+import (
+	"fmt"
+	"time"
+)
+
+func sendMessage(msg message) (string, int) {
+	return msg.getMessage(), len(msg.getMessage()) * 3
 }
 
-type User struct {
-	Name string
-	Membership
+type message interface {
+	getMessage() string
 }
 
-type Membership struct {
-	Type             string
-	MessageCharLimit int
+// don't edit below this line
+
+type birthdayMessage struct {
+	birthdayTime  time.Time
+	recipientName string
 }
 
-func newUser(name string, membershipType string) User {
-	var user User
-	user.Name = name
-	user.Type = membershipType
-	if membershipType == "premium" {
-		user.MessageCharLimit = 1000
-	} else {
-		user.MessageCharLimit = 100
-	}
+func (bm birthdayMessage) getMessage() string {
+	return fmt.Sprintf("Hi %s, it is your birthday on %s", bm.recipientName, bm.birthdayTime.Format(time.RFC3339))
+}
 
-	return user
+type sendingReport struct {
+	reportName    string
+	numberOfSends int
+}
+
+func (sr sendingReport) getMessage() string {
+	return fmt.Sprintf(`Your "%s" report is ready. You've sent %v messages.`, sr.reportName, sr.numberOfSends)
 }
