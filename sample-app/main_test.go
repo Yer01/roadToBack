@@ -5,40 +5,63 @@ import (
 	"testing"
 )
 
+func getSenderLog(s sender) string {
+	return fmt.Sprintf(`
+====================================
+Sender name: %v
+Sender number: %v
+Sender rateLimit: %v
+====================================
+`, s.name, s.number, s.rateLimit)
+}
+
 func Test(t *testing.T) {
 	type testCase struct {
-		mToSend  messageToSend
-		expected bool
+		rateLimit int
+		name      string
+		number    int
+		expected  string
 	}
 	tests := []testCase{
-		{messageToSend{
-			message:   "you have an appointment tomorrow",
-			sender:    user{name: "Brenda Halafax", number: 16545550987},
-			recipient: user{name: "Sally Sue", number: 19035558973},
-		}, true},
-		{messageToSend{
-			message:   "you have an event tomorrow",
-			sender:    user{number: 16545550987},
-			recipient: user{name: "Suzie Sall", number: 19035558973},
-		}, false},
+		{
+			10000,
+			"Deborah",
+			18055558790,
+			`
+====================================
+Sender name: Deborah
+Sender number: 18055558790
+Sender rateLimit: 10000
+====================================
+`,
+		},
+		{
+			5000,
+			"Jason",
+			18055558791,
+			`
+====================================
+Sender name: Jason
+Sender number: 18055558791
+Sender rateLimit: 5000
+====================================
+`,
+		},
 	}
 	if withSubmit {
 		tests = append(tests, []testCase{
-			{messageToSend{
-				message:   "you have an birthday tomorrow",
-				sender:    user{name: "Jason Bjorn", number: 16545550987},
-				recipient: user{name: "Jim Bond"},
-			}, false},
-			{messageToSend{
-				message:   "you have a party tomorrow",
-				sender:    user{name: "Njorn Halafax"},
-				recipient: user{name: "Becky Sue", number: 19035558973},
-			}, false},
-			{messageToSend{
-				message:   "you have a birthday tomorrow",
-				sender:    user{name: "Eli Halafax", number: 16545550987},
-				recipient: user{number: 19035558973},
-			}, false},
+			{
+				1000,
+				"Jill",
+				18055558792,
+				`
+====================================
+Sender name: Jill
+Sender number: 18055558792
+Sender rateLimit: 1000
+====================================
+`,
+			},
 		}...)
 	}
 
@@ -46,49 +69,32 @@ func Test(t *testing.T) {
 	failCount := 0
 
 	for _, test := range tests {
-		output := canSendMessage(test.mToSend)
+		output := getSenderLog(sender{
+			rateLimit: test.rateLimit,
+			user: user{
+				name:   test.name,
+				number: test.number,
+			},
+		})
 		if output != test.expected {
 			failCount++
 			t.Errorf(`---------------------------------
-Test Failed. Inputs:
-* message:          %s
-* sender.name:      %s
-* sender.number:    %d
-* recipient.name:   %s
-* recipient.number: %d
-Expected:           %v
-Actual:             %v
-`,
-				test.mToSend.message,
-				test.mToSend.sender.name,
-				test.mToSend.sender.number,
-				test.mToSend.recipient.name,
-				test.mToSend.recipient.number,
-				test.expected,
-				output)
+Inputs:     (%v, %v, %v)
+Expecting:  %v
+Actual:     %v
+Fail`, test.rateLimit, test.name, test.number, test.expected, output)
 		} else {
 			passCount++
 			fmt.Printf(`---------------------------------
-Test Passed. Inputs:
-* message:          %s
-* sender.name:      %s
-* sender.number:    %d
-* recipient.name:   %s
-* recipient.number: %d
-Expected:           %v
-Actual:             %v
-`,
-				test.mToSend.message,
-				test.mToSend.sender.name,
-				test.mToSend.sender.number,
-				test.mToSend.recipient.name,
-				test.mToSend.recipient.number,
-				test.expected,
-				output)
+Inputs:     (%v, %v, %v)
+Expecting:  %v
+Actual:     %v
+Pass
+`, test.rateLimit, test.name, test.number, test.expected, output)
 		}
 	}
 
-	fmt.Printf("---------------------------------\n")
+	fmt.Println("---------------------------------")
 	fmt.Printf("%d passed, %d failed\n", passCount, failCount)
 }
 
