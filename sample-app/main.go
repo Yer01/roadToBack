@@ -22,8 +22,8 @@ func (p PlainText) Format() string {
 	return p.message
 }
 
-func (b Bold) Format() string {
-	return fmt.Sprintf("**%s**", b.message)
+func (p Bold) Format() string {
+	return fmt.Sprintf("**%s**", p.message)
 }
 
 func (c Code) Format() string {
