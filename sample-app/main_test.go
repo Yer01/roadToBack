@@ -2,51 +2,73 @@ package main
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 )
 
 func Test(t *testing.T) {
-	type testCase struct {
-		name     string
-		expected uintptr
-	}
-
-	tests := []testCase{
-		{"contact", uintptr(24)},
+	tests := []struct {
+		name           string
+		membershipType string
+	}{
+		{"Syl", "standard"},
+		{"Pattern", "premium"},
+		{"Pattern", "standard"},
 	}
 	if withSubmit {
-		tests = append(tests, testCase{"perms", uintptr(16)})
+		submitCases := []struct {
+			name           string
+			membershipType string
+		}{
+			{"Renarin", "standard"},
+			{"Lift", "premium"},
+			{"Dalinar", "standard"},
+		}
+		tests = append(tests, submitCases...)
 	}
 
 	passCount := 0
 	failCount := 0
 
-	for _, test := range tests {
-		var typ reflect.Type
-		if test.name == "contact" {
-			typ = reflect.TypeOf(contact{})
-		} else if test.name == "perms" {
-			typ = reflect.TypeOf(perms{})
+	for _, tc := range tests {
+		user := newUser(tc.name, tc.membershipType)
+
+		msgCharLimit := 100
+		if tc.membershipType == "premium" {
+			msgCharLimit = 1000
 		}
 
-		size := typ.Size()
-
-		if size != test.expected {
+		if user.Name != tc.name {
 			failCount++
 			t.Errorf(`---------------------------------
-Inputs:     (%v)
-Expecting:  %v bytes
-Actual:     %v bytes
-Fail`, test.name, test.expected, size)
+Test Failed (name):
+Inputs:     (name: %v, membershipType: %v)
+Expecting:  %v
+Actual:     %v
+`, tc.name, tc.membershipType, tc.name, user.Name)
+		} else if user.Type != tc.membershipType {
+			failCount++
+			t.Errorf(`---------------------------------
+Test Failed (membership type):
+Inputs:     (name: %v, membershipType: %v)
+Expecting:  %v
+Actual:     %v
+`, tc.name, tc.membershipType, tc.membershipType, user.Type)
+		} else if user.MessageCharLimit != msgCharLimit {
+			failCount++
+			t.Errorf(`---------------------------------
+Test Failed (message character limit):
+Inputs:     (name: %v, membershipType: %v)
+Expecting:  %v
+Actual:     %v
+`, tc.name, tc.membershipType, msgCharLimit, user.MessageCharLimit)
 		} else {
 			passCount++
 			fmt.Printf(`---------------------------------
-Inputs:     (%v)
-Expecting:  %v bytes
-Actual:     %v bytes
-Pass
-`, test.name, test.expected, size)
+Test Passed:
+Inputs:     (name: %v, membershipType: %v)
+Expecting:  %v, %v, %v
+Actual:     %v, %v, %v
+`, tc.name, tc.membershipType, tc.name, tc.membershipType, msgCharLimit, user.Name, user.Type, user.MessageCharLimit)
 		}
 	}
 
