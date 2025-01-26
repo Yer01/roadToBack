@@ -1,5 +1,12 @@
 package main
 
+func (u User) SendMessage(message string, messageLength int) (string, bool) {
+	if u.MessageCharLimit >= messageLength {
+		return message, true
+	}
+	return "", false
+}
+
 type User struct {
 	Name string
 	Membership
