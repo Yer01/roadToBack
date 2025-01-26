@@ -1,27 +1,13 @@
 package main
 
-import (
-	"fmt"
-)
+import "errors"
 
-func sendSMSToCouple(msgToCustomer, msgToSpouse string) (int, error) {
-	cost, err := sendSMS(msgToCustomer)
-	c, e := sendSMS(msgToSpouse)
-	if err != nil {
-		return 0, err
-	} else if e != nil {
-		return 0, e
+func validateStatus(status string) error {
+	size := len(status)
+	if size == 0 {
+		return errors.New("status cannot be empty")
+	} else if size > 140 {
+		return errors.New("status exceeds 140 characters")
 	}
-	return cost + c, nil
-}
-
-// don't edit below this line
-
-func sendSMS(message string) (int, error) {
-	const maxTextLen = 25
-	const costPerChar = 2
-	if len(message) > maxTextLen {
-		return 0, fmt.Errorf("can't send texts over %v characters", maxTextLen)
-	}
-	return costPerChar * len(message), nil
+	return nil
 }

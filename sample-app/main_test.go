@@ -5,52 +5,52 @@ import (
 	"testing"
 )
 
-func Test(t *testing.T) {
-	type testCase struct {
-		msgToCustomer string
-		msgToSpouse   string
-		expectedCost  int
-		expectedErr   error
-	}
-	tests := []testCase{
-		{"Thanks for coming in to our flower shop today!", "We hope you enjoyed your gift.", 0, fmt.Errorf("can't send texts over 25 characters")},
-		{"Thanks for joining us!", "Have a good day.", 76, nil},
+func TestValidateStatus(t *testing.T) {
+	testCases := []struct {
+		status      string
+		expectedErr string
+	}{
+		{"", "status cannot be empty"},
+		{"This is a valid status update that is well within the character limit.", ""},
+		{"This status update is way too long. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.", "status exceeds 140 characters"},
 	}
 	if withSubmit {
-		tests = append(tests, []testCase{
-			{"Thank you.", "Enjoy!", 32, nil},
-			{"We loved having you in!", "We hope the rest of your evening is fantastic.", 0, fmt.Errorf("can't send texts over 25 characters")},
-		}...)
+		testCases = append(testCases,
+			struct {
+				status      string
+				expectedErr string
+			}{"Another valid status.", ""},
+			struct {
+				status      string
+				expectedErr string
+			}{"This status update, while derivative, contains exactly one hundred and forty-one characters, which is over the status update character limit.", "status exceeds 140 characters"},
+		)
 	}
 
 	passCount := 0
 	failCount := 0
 
-	for _, test := range tests {
-		cost, err := sendSMSToCouple(test.msgToCustomer, test.msgToSpouse)
+	for _, tc := range testCases {
+		err := validateStatus(tc.status)
 		errString := ""
 		if err != nil {
 			errString = err.Error()
 		}
-		expectedErrString := ""
-		if test.expectedErr != nil {
-			expectedErrString = test.expectedErr.Error()
-		}
-		if cost != test.expectedCost || errString != expectedErrString {
+		if errString != tc.expectedErr {
 			failCount++
 			t.Errorf(`---------------------------------
-Inputs:     (%v, %v)
-Expecting:  (%v, %v)
-Actual:     (%v, %v)
-Fail`, test.msgToCustomer, test.msgToSpouse, test.expectedCost, test.expectedErr, cost, err)
+Inputs:     "%v"
+Expecting:  "%v"
+Actual:     "%v"
+Fail`, tc.status, tc.expectedErr, errString)
 		} else {
 			passCount++
 			fmt.Printf(`---------------------------------
-Inputs:     (%v, %v)
-Expecting:  (%v, %v)
-Actual:     (%v, %v)
+Inputs:     "%v"
+Expecting:  "%v"
+Actual:     "%v"
 Pass
-`, test.msgToCustomer, test.msgToSpouse, test.expectedCost, test.expectedErr, cost, err)
+`, tc.status, tc.expectedErr, errString)
 		}
 	}
 
@@ -58,6 +58,4 @@ Pass
 	fmt.Printf("%d passed, %d failed\n", passCount, failCount)
 }
 
-// withSubmit is set at compile time depending
-// on which button is used to run the tests
 var withSubmit = true
