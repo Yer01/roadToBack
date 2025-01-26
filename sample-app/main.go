@@ -1,10 +1,14 @@
 package main
 
-type authenticationInfo struct {
-	username string
-	password string
+type contact struct {
+	userID       string
+	sendingLimit int32
+	age          int32
 }
 
-func (a authenticationInfo) getBasicAuth() string {
-	return "Authorization: Basic " + a.username + ":" + a.password
+type perms struct {
+	permissionLevel int
+	canSend         bool
+	canReceive      bool
+	canManage       bool
 }
