@@ -5,39 +5,37 @@ import (
 	"testing"
 )
 
-func Test(t *testing.T) {
+func TestDeleteIfNecessary(t *testing.T) {
 	type testCase struct {
-		names        []string
-		phoneNumbers []int
-		expected     map[string]user
-		errString    string
+		users             map[string]user
+		name              string
+		expectedErrString string
+		expectedUsers     map[string]user
+		expectedDeleted   bool
 	}
 	tests := []testCase{
 		{
-			[]string{"Eren", "Armin", "Mikasa"},
-			[]int{14355550987, 98765550987, 18265554567},
-			map[string]user{"Eren": {"Eren", 14355550987}, "Armin": {"Armin", 98765550987}, "Mikasa": {"Mikasa", 18265554567}},
+			map[string]user{"Erwin": {"Erwin", 14355550987, true}, "Levi": {"Levi", 98765550987, true}, "Hanji": {"Hanji", 18265554567, true}},
+			"Erwin",
 			"",
+			map[string]user{"Levi": {"Levi", 98765550987, true}, "Hanji": {"Hanji", 18265554567, true}},
+			true,
 		},
 		{
-			[]string{"Eren", "Armin"},
-			[]int{14355550987, 98765550987, 18265554567},
-			nil,
-			"invalid sizes",
+			map[string]user{"Erwin": {"Erwin", 14355550987, false}, "Levi": {"Levi", 98765550987, false}, "Hanji": {"Hanji", 18265554567, false}},
+			"Erwin",
+			"",
+			map[string]user{"Erwin": {"Erwin", 14355550987, false}, "Levi": {"Levi", 98765550987, false}, "Hanji": {"Hanji", 18265554567, false}},
+			false,
 		},
 	}
 	tests = append(tests, []testCase{
 		{
-			[]string{"George", "Annie", "Reiner", "Sasha"},
-			[]int{20955559812, 38385550982, 48265554567, 16045559873},
-			map[string]user{"George": {"George", 20955559812}, "Annie": {"Annie", 38385550982}, "Reiner": {"Reiner", 48265554567}, "Sasha": {"Sasha", 16045559873}},
-			"",
-		},
-		{
-			[]string{"George", "Annie", "Reiner"},
-			[]int{20955559812, 38385550982, 48265554567, 16045559873},
-			nil,
-			"invalid sizes",
+			map[string]user{"Erwin": {"Erwin", 14355550987, true}, "Levi": {"Levi", 98765550987, true}, "Hanji": {"Hanji", 18265554567, true}},
+			"Eren",
+			"not found",
+			map[string]user{"Erwin": {"Erwin", 14355550987, true}, "Levi": {"Levi", 98765550987, true}, "Hanji": {"Hanji", 18265554567, true}},
+			false,
 		},
 	}...)
 
@@ -45,66 +43,106 @@ func Test(t *testing.T) {
 	failCount := 0
 
 	for _, test := range tests {
-		output, err := getUserMap(test.names, test.phoneNumbers)
-		if test.errString != "" && err == nil {
-			failCount++
-			t.Errorf(`
+		originalUsers := getMapCopy(test.users)
+		deleted, err := deleteIfNecessary(test.users, test.name)
+		if test.expectedErrString != "" {
+			if err == nil {
+				failCount++
+				t.Errorf(`
 ---------------------------------
 Test Failed:
-  names: %v
-  phoneNumbers: %v
-  expected err: %v
-  actual err: none
-`, test.names, test.phoneNumbers, test.errString)
-		} else if test.errString == "" && err != nil {
-			failCount++
-			t.Errorf(`
----------------------------------
-Test Failed:
-  names: %v
-  phoneNumbers: %v
-  expected err: none
-  actual err: %v
-`, test.names, test.phoneNumbers, err)
-		} else if test.errString != "" && err != nil && err.Error() != test.errString {
-			failCount++
-			t.Errorf(`
----------------------------------
-Test Failed:
-  names: %v
-  phoneNumbers: %v
-  expected err: %v
-  actual err: %v
-`, test.names, test.phoneNumbers, test.errString, err)
-		} else if !compareMaps(output, test.expected) {
-			failCount++
-			t.Errorf(`
----------------------------------
-Test Failed:
-  names: %v
-  phoneNumbers: %v
-  expected:
+  users:
 %v
-  actual:
+  name: %v
+  expected error: %v
+  actual error: none
+`, formatMap(originalUsers), test.name, test.expectedErrString)
+			} else if err.Error() != test.expectedErrString {
+				failCount++
+				t.Errorf(`
+---------------------------------
+Test Failed:
+  users:
 %v
-`, test.names, test.phoneNumbers, formatMap(test.expected), formatMap(output))
+  name: %v
+  expected error: %v
+  actual error: %v
+`, formatMap(originalUsers), test.name, test.expectedErrString, err)
+			} else {
+				passCount++
+				fmt.Printf(`
+---------------------------------
+Test Passed:
+  users:
+%v
+  name: %v
+  expected error: %v
+  actual error: %v
+`, formatMap(originalUsers), test.name, test.expectedErrString, err)
+			}
+		} else if err != nil {
+			failCount++
+			t.Errorf(`
+---------------------------------
+Test Failed:
+  users:
+%v
+  name: %v
+  expected error: none
+  actual error: %v
+`, formatMap(originalUsers), test.name, err)
+		} else if !compareMaps(test.users, test.expectedUsers) {
+			failCount++
+			t.Errorf(`
+---------------------------------
+Test Failed:
+  users:
+%v
+  name: %v
+  expected users:
+%v
+  actual users:
+%v
+`, formatMap(originalUsers), test.name, formatMap(test.expectedUsers), formatMap(test.users))
+		} else if deleted != test.expectedDeleted {
+			failCount++
+			t.Errorf(`
+---------------------------------
+Test Failed:
+  users:
+%v
+  name: %v
+  expected deleted: %v
+  actual deleted: %v
+`, formatMap(originalUsers), test.name, test.expectedDeleted, deleted)
 		} else {
 			passCount++
 			fmt.Printf(`
 ---------------------------------
 Test Passed:
-  names: %v
-  phoneNumbers: %v
-  expected:
+  users:
 %v
-  actual:
+  name: %v
+  expected users:
 %v
-`, test.names, test.phoneNumbers, formatMap(test.expected), formatMap(output))
+  actual users:
+%v
+  expected deleted: %v
+  actual deleted: %v
+`, formatMap(originalUsers), test.name, formatMap(test.expectedUsers), formatMap(test.users), test.expectedDeleted, deleted)
 		}
 	}
 
 	fmt.Println("---------------------------------")
 	fmt.Printf("%d passed, %d failed\n", passCount, failCount)
+}
+
+func getMapCopy(m map[string]user) map[string]user {
+	copy := make(map[string]user)
+	for key, value := range m {
+		copy[key] = value
+	}
+	return copy
 }
 
 func formatMap(m map[string]user) string {
