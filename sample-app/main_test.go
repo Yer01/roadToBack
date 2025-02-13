@@ -2,35 +2,42 @@ package main
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 )
 
-func TestTagMessages(t *testing.T) {
+func Test(t *testing.T) {
 	type testCase struct {
-		messages []sms
-		expected [][]string
+		names        []string
+		phoneNumbers []int
+		expected     map[string]user
+		errString    string
 	}
-
 	tests := []testCase{
 		{
-			messages: []sms{{id: "001", content: "Urgent, please respond!"}, {id: "002", content: "Big sale on all items!"}},
-			expected: [][]string{{"Urgent"}, {"Promo"}},
+			[]string{"Eren", "Armin", "Mikasa"},
+			[]int{14355550987, 98765550987, 18265554567},
+			map[string]user{"Eren": {"Eren", 14355550987}, "Armin": {"Armin", 98765550987}, "Mikasa": {"Mikasa", 18265554567}},
+			"",
 		},
 		{
-			messages: []sms{{id: "003", content: "Enjoy your day"}},
-			expected: [][]string{{}},
+			[]string{"Eren", "Armin"},
+			[]int{14355550987, 98765550987, 18265554567},
+			nil,
+			"invalid sizes",
 		},
 	}
-
 	tests = append(tests, []testCase{
 		{
-			messages: []sms{{id: "004", content: "Sale! Don't miss out on these urgent promotions!"}},
-			expected: [][]string{{"Urgent", "Promo"}},
+			[]string{"George", "Annie", "Reiner", "Sasha"},
+			[]int{20955559812, 38385550982, 48265554567, 16045559873},
+			map[string]user{"George": {"George", 20955559812}, "Annie": {"Annie", 38385550982}, "Reiner": {"Reiner", 48265554567}, "Sasha": {"Sasha", 16045559873}},
+			"",
 		},
 		{
-			messages: []sms{{id: "005", content: "i nEEd URgEnt help, my FROZEN FLAME was used"}, {id: "006", content: "wAnt to saLE 200x heavy leather"}},
-			expected: [][]string{{"Urgent"}, {"Promo"}},
+			[]string{"George", "Annie", "Reiner"},
+			[]int{20955559812, 38385550982, 48265554567, 16045559873},
+			nil,
+			"invalid sizes",
 		},
 	}...)
 
@@ -38,37 +45,84 @@ func TestTagMessages(t *testing.T) {
 	failCount := 0
 
 	for _, test := range tests {
-		actual := tagMessages(test.messages, tagger)
-		if len(actual) != len(test.expected) {
+		output, err := getUserMap(test.names, test.phoneNumbers)
+		if test.errString != "" && err == nil {
 			failCount++
-			t.Errorf(`---------------------------------
-Test Failed for length of returned sms slice
-Expecting: %v
-Actual:    %v
-Fail`, len(test.expected), len(actual))
-			continue
-		}
-
-		for i, msg := range actual {
-			if !reflect.DeepEqual(msg.tags, test.expected[i]) {
-				failCount++
-				t.Errorf(`---------------------------------
-Test Failed for message ID %s
-Expecting: %v
-Actual:    %v
-Fail`, msg.id, test.expected[i], msg.tags)
-			} else {
-				passCount++
-				fmt.Printf(`---------------------------------
-Test Passed for message ID %s
-Expecting: %v
-Actual:    %v
-Pass
-`, msg.id, test.expected[i], msg.tags)
-			}
+			t.Errorf(`
+---------------------------------
+Test Failed:
+  names: %v
+  phoneNumbers: %v
+  expected err: %v
+  actual err: none
+`, test.names, test.phoneNumbers, test.errString)
+		} else if test.errString == "" && err != nil {
+			failCount++
+			t.Errorf(`
+---------------------------------
+Test Failed:
+  names: %v
+  phoneNumbers: %v
+  expected err: none
+  actual err: %v
+`, test.names, test.phoneNumbers, err)
+		} else if test.errString != "" && err != nil && err.Error() != test.errString {
+			failCount++
+			t.Errorf(`
+---------------------------------
+Test Failed:
+  names: %v
+  phoneNumbers: %v
+  expected err: %v
+  actual err: %v
+`, test.names, test.phoneNumbers, test.errString, err)
+		} else if !compareMaps(output, test.expected) {
+			failCount++
+			t.Errorf(`
+---------------------------------
+Test Failed:
+  names: %v
+  phoneNumbers: %v
+  expected:
+%v
+  actual:
+%v
+`, test.names, test.phoneNumbers, formatMap(test.expected), formatMap(output))
+		} else {
+			passCount++
+			fmt.Printf(`
+---------------------------------
+Test Passed:
+  names: %v
+  phoneNumbers: %v
+  expected:
+%v
+  actual:
+%v
+`, test.names, test.phoneNumbers, formatMap(test.expected), formatMap(output))
 		}
 	}
 
 	fmt.Println("---------------------------------")
 	fmt.Printf("%d passed, %d failed\n", passCount, failCount)
+}
+
+func formatMap(m map[string]user) string {
+	var str string
+	for key, value := range m {
+		str += fmt.Sprintf("  * %s: %v\n", key, value)
+	}
+	return str
+}
+
+func compareMaps(map1, map2 map[string]user) bool {
+	if len(map1) != len(map2) {
+		return false
+	}
+	for key, value1 := range map1 {
+		if value2, exist := map2[key]; !exist || value1 != value2 {
+			return false
+		}
+	}
+	return true
 }
