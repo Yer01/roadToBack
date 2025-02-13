@@ -1,39 +1,49 @@
 package main
 
-import "strings"
+import (
+	"errors"
+	"fmt"
+)
 
-type sms struct {
-	id      string
-	content string
-	tags    []string
+// getLogger takes a function that formats two strings into
+// a single string and returns a function that formats two strings but prints
+// the result instead of returning it
+func getLogger(formatter func(string, string) string) func(string, string) {
+	return func(s, w string) {
+		fmt.Println(formatter(s, w))
+	}
 }
 
-func tagMessages(messages []sms, tagger func(sms) []string) []sms {
-	for i := range messages {
-		t := tagger(messages[i])
-		messages[i].tags = t
+// don't touch below this line
+
+func test(first string, errors []error, formatter func(string, string) string) {
+	defer fmt.Println("====================================")
+	logger := getLogger(formatter)
+	fmt.Println("Logs:")
+	for _, err := range errors {
+		logger(first, err.Error())
 	}
-	return messages
 }
 
-func tagger(msg sms) []string {
-	tags := []string{}
-	word := strings.Fields(msg.content)
-	for _, w := range word {
-		lw := strings.ToLower(w)
-		if len(lw) >= 6 {
-			if lw[0:6] == "urgent" {
-				tags = append(tags, "Urgent")
-			}
-		}
-		if len(lw) >= 4 {
-			if lw[0:4] == "sale" {
-				tags = append(tags, "Promo")
-			}
-		}
+func colonDelimit(first, second string) string {
+	return first + ": " + second
+}
+func commaDelimit(first, second string) string {
+	return first + ", " + second
+}
+
+func main() {
+	dbErrors := []error{
+		errors.New("out of memory"),
+		errors.New("cpu is pegged"),
+		errors.New("networking issue"),
+		errors.New("invalid syntax"),
 	}
-	if len(tags) == 2 && tags[1] == "Urgent" {
-		tags[0], tags[1] = tags[1], tags[0]
+	test("Error on database server", dbErrors, colonDelimit)
+
+	mailErrors := []error{
+		errors.New("email too large"),
+		errors.New("non alphanumeric symbols found"),
 	}
-	return tags
+	test("Error on mail server", mailErrors, commaDelimit)
 }
