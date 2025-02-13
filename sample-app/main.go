@@ -1,40 +1,39 @@
 package main
 
-import "fmt"
+import "strings"
 
-func printReports(messages []string) {
-	for _, message := range messages {
-		printCostReport(func(s string) int {
-			return len(s) * 2
-		}, message)
+type sms struct {
+	id      string
+	content string
+	tags    []string
+}
+
+func tagMessages(messages []sms, tagger func(sms) []string) []sms {
+	for i := range messages {
+		t := tagger(messages[i])
+		messages[i].tags = t
 	}
+	return messages
 }
 
-// don't touch below this line
-
-func test(messages []string) {
-	defer fmt.Println("====================================")
-	printReports(messages)
-}
-
-func main() {
-	test([]string{
-		"Here's Johnny!",
-		"Go ahead, make my day",
-		"You had me at hello",
-		"There's no place like home",
-	})
-
-	test([]string{
-		"Hello, my name is Inigo Montoya. You killed my father. Prepare to die.",
-		"May the Force be with you.",
-		"Show me the money!",
-		"Go ahead, make my day.",
-	})
-}
-
-func printCostReport(costCalculator func(string) int, message string) {
-	cost := costCalculator(message)
-	fmt.Printf(`Message: "%s" Cost: %v cents`, message, cost)
-	fmt.Println()
+func tagger(msg sms) []string {
+	tags := []string{}
+	word := strings.Fields(msg.content)
+	for _, w := range word {
+		lw := strings.ToLower(w)
+		if len(lw) >= 6 {
+			if lw[0:6] == "urgent" {
+				tags = append(tags, "Urgent")
+			}
+		}
+		if len(lw) >= 4 {
+			if lw[0:4] == "sale" {
+				tags = append(tags, "Promo")
+			}
+		}
+	}
+	if len(tags) == 2 && tags[1] == "Urgent" {
+		tags[0], tags[1] = tags[1], tags[0]
+	}
+	return tags
 }

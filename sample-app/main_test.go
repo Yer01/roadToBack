@@ -2,38 +2,35 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
-func Test(t *testing.T) {
+func TestTagMessages(t *testing.T) {
 	type testCase struct {
-		formatter func(string) string
-		messages  []string
-		expected  []string
+		messages []sms
+		expected [][]string
 	}
 
 	tests := []testCase{
 		{
-			formatter: addSignature,
-			messages:  []string{"Hello, how are you?", "I hope you are well,"},
-			expected:  []string{"Hello, how are you? kind regards.", "I hope you are well, kind regards."},
+			messages: []sms{{id: "001", content: "Urgent, please respond!"}, {id: "002", content: "Big sale on all items!"}},
+			expected: [][]string{{"Urgent"}, {"Promo"}},
 		},
 		{
-			formatter: addGreeting,
-			messages:  []string{"I'm doing well.", "Love your hair!"},
-			expected:  []string{"Hello! I'm doing well.", "Hello! Love your hair!"},
+			messages: []sms{{id: "003", content: "Enjoy your day"}},
+			expected: [][]string{{}},
 		},
 	}
+
 	tests = append(tests, []testCase{
 		{
-			formatter: addGreeting,
-			messages:  []string{"", ""},
-			expected:  []string{"Hello! ", "Hello! "},
+			messages: []sms{{id: "004", content: "Sale! Don't miss out on these urgent promotions!"}},
+			expected: [][]string{{"Urgent", "Promo"}},
 		},
 		{
-			formatter: addGreeting,
-			messages:  []string{"I'm so sick of this crap.", "I need a change.", "Maybe I should go touch grass."},
-			expected:  []string{"Hello! I'm so sick of this crap.", "Hello! I need a change.", "Hello! Maybe I should go touch grass."},
+			messages: []sms{{id: "005", content: "i nEEd URgEnt help, my FROZEN FLAME was used"}, {id: "006", content: "wAnt to saLE 200x heavy leather"}},
+			expected: [][]string{{"Urgent"}, {"Promo"}},
 		},
 	}...)
 
@@ -41,42 +38,37 @@ func Test(t *testing.T) {
 	failCount := 0
 
 	for _, test := range tests {
-		messages := getFormattedMessages(test.messages, test.formatter)
-		for i, message := range messages {
-			expected := test.expected[i]
-			input := test.messages[i]
-			if message != expected {
-				failCount++
-				t.Errorf(`
----------------------------------
-Test Failed:
-input:     %v
+		actual := tagMessages(test.messages, tagger)
+		if len(actual) != len(test.expected) {
+			failCount++
+			t.Errorf(`---------------------------------
+Test Failed for length of returned sms slice
 Expecting: %v
 Actual:    %v
-Fail
-`, input, expected, message)
+Fail`, len(test.expected), len(actual))
+			continue
+		}
+
+		for i, msg := range actual {
+			if !reflect.DeepEqual(msg.tags, test.expected[i]) {
+				failCount++
+				t.Errorf(`---------------------------------
+Test Failed for message ID %s
+Expecting: %v
+Actual:    %v
+Fail`, msg.id, test.expected[i], msg.tags)
 			} else {
 				passCount++
-				fmt.Printf(`
----------------------------------
-Test Passed:
-input:     %v
+				fmt.Printf(`---------------------------------
+Test Passed for message ID %s
 Expecting: %v
 Actual:    %v
 Pass
-`, input, expected, message)
+`, msg.id, test.expected[i], msg.tags)
 			}
 		}
 	}
 
 	fmt.Println("---------------------------------")
 	fmt.Printf("%d passed, %d failed\n", passCount, failCount)
-}
-
-func addSignature(message string) string {
-	return message + " kind regards."
-}
-
-func addGreeting(message string) string {
-	return "Hello! " + message
 }
