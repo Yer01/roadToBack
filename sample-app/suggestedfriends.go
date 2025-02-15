@@ -3,7 +3,7 @@ package main
 import "slices"
 
 func findSuggestedFriends(username string, friendships map[string][]string) []string {
-	sugfriends := []string{}
+	var sugfriends []string
 
 	for _, friend := range friendships[username] {
 		for _, candidate := range friendships[friend] {
@@ -14,8 +14,5 @@ func findSuggestedFriends(username string, friendships map[string][]string) []st
 			}
 		}
 	}
-	if len(sugfriends) > 0 {
-		return sugfriends
-	}
-	return nil
+	return sugfriends
 }
