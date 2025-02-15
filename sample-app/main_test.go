@@ -2,105 +2,82 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	"reflect"
+	"sort"
 	"testing"
 )
 
 func Test(t *testing.T) {
+	friendships := map[string][]string{
+		"Dalinar": {"Kaladin", "Pattern", "Shallan"},
+		"Kaladin": {"Dalinar", "Syl", "Teft", "Shallan"},
+		"Pattern": {"Dalinar", "Teft", "Shallan"},
+		"Syl":     {"Kaladin"},
+		"Teft":    {"Kaladin", "Pattern"},
+		"Moash":   {},
+		"Shallan": {"Pattern", "Kaladin", "Dalinar"},
+	}
+
 	testCases := []struct {
-		messages []string
-		expected int
+		username string
+		expected []string
 	}{
-		{
-			[]string{"WTS Arcanite Bar! Cheaper than AH", "Do you need an Arcanite Bar!"},
-			10,
-		},
-		{
-			[]string{"Could you give me a number crunch real quick?", "Looks like we have a 32.33% (repeating of course) percentage of survival."},
-			19,
-		},
-		{
-			[]string{"LFG UBRS", "lfg ubrs", "LFG Ubrs"},
-			2,
-		},
+		{"Dalinar", []string{"Syl", "Teft"}},
+		{"Kaladin", []string{"Pattern"}},
+		{"Pattern", []string{"Kaladin"}},
+		{"Syl", []string{"Dalinar", "Shallan", "Teft"}},
+		{"Teft", []string{"Dalinar", "Shallan", "Syl"}},
+		{"Moash", nil},
 	}
 
 	testCases = append(testCases, struct {
-		messages []string
-		expected int
+		username string
+		expected []string
 	}{
-		[]string{"Alright time's up! Let's do this.", "Leroy Jenkins!", "Damn it Leroy"},
-		10,
-	}, struct {
-		messages []string
-		expected int
-	}{
-		[]string{"I'm out of range", "I'm out of mana"},
-		5,
+		"Odium", nil,
 	},
 		struct {
-			messages []string
-			expected int
+			username string
+			expected []string
 		}{
-			[]string{
-				"LF9M UBRS need all",
-				"LF8M UBRS need all",
-				"LF7M UBRS need all",
-				"LF6M UBRS need tanks and heals",
-				"LF5M UBRS need tanks and heals",
-				"LF4M UBRS need tanks and heals",
-				"LF3M UBRS need tanks and healer",
-				"LF2M UBRS need tanks",
-				"LF1M UBRS need tank",
-				"Group is full thanks!",
-			},
-			21,
+			"Shallan", []string{"Syl", "Teft"},
 		},
-		struct {
-			messages []string
-			expected int
-		}{
-			[]string{""},
-			0,
-		})
+	)
 
 	passCount := 0
 	failCount := 0
 
 	for _, tc := range testCases {
-		result := countDistinctWords(tc.messages)
-		formattedMessages := formatMessages(tc.messages)
-		if result != tc.expected {
-			failCount++
-			t.Errorf(`---------------------------------
-FAIL:
-Messages: %v
-Expecting: %d unique words
-Actual:    %d unique words
+		t.Run(tc.username, func(t *testing.T) {
+			result := findSuggestedFriends(tc.username, friendships)
+			sort.Strings(result)
+			if !reflect.DeepEqual(result, tc.expected) {
+				failCount++
+				t.Errorf(`---------------------------------
+Test Failed for username %s:
+Expecting:  %v
+Actual:     %v
 Fail
-`, formattedMessages, tc.expected, result)
-		} else {
-			passCount++
-			fmt.Printf(`---------------------------------
-Test Passed!
-Messages: %v
-Expecting: %d unique words
-Actual:    %d unique words
+`, tc.username, formatSlice(tc.expected), formatSlice(result))
+			} else {
+				passCount++
+				fmt.Printf(`---------------------------------
+Test Passed for username %s:
+Expecting:  %v
+Actual:     %v
 Pass
-`, formattedMessages, tc.expected, result)
-		}
+`, tc.username, formatSlice(tc.expected), formatSlice(result))
+			}
+		})
 	}
 
 	fmt.Println("---------------------------------")
 	fmt.Printf("%d passed, %d failed\n", passCount, failCount)
 }
 
-func formatMessages(messages []string) string {
-	var formattedMessages []string
-	for _, message := range messages {
-		words := strings.Fields(message)
-		formattedMessage := strings.Join(words, " ")
-		formattedMessages = append(formattedMessages, fmt.Sprintf("[%s]", formattedMessage))
+func formatSlice(slice []string) string {
+	if slice == nil {
+		return "nil"
 	}
-	return strings.Join(formattedMessages, ", ")
+	return fmt.Sprintf("%+v", slice)
 }
