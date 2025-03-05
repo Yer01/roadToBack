@@ -14,7 +14,6 @@ type user struct {
 
 func logAndDelete(users map[string]user, name string) (log string) {
 	user, ok := users[name]
-
 	delete(users, name)
 	if ok {
 		if user.admin {
