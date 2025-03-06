@@ -2,25 +2,39 @@ package main
 
 import (
 	"fmt"
-	"slices"
 	"testing"
 )
 
-func Test(t *testing.T) {
+func TestProcessMessages(t *testing.T) {
 	type testCase struct {
-		n        int
-		expected []int
+		messages []string
+		expect   []string
 	}
 
 	runCases := []testCase{
-		{5, []int{0, 1, 1, 2, 3}},
-		{3, []int{0, 1, 1}},
+		{
+			messages: []string{"Sunlit", "Man"},
+			expect:   []string{"Man-processed", "Sunlit-processed"},
+		},
+		{
+			messages: []string{"Nomad do you copy?"},
+			expect:   []string{"Nomad do you copy?-processed"},
+		},
+		{
+			messages: []string{"Scadriel", "Roshar", "Sel", "Nalthis", "Taldain"},
+			expect:   []string{"Taldain-processed", "Roshar-processed", "Sel-processed", "Nalthis-processed", "Scadriel-processed"},
+		},
 	}
 
 	submitCases := append(runCases, []testCase{
-		{0, []int{}},
-		{1, []int{0}},
-		{7, []int{0, 1, 1, 2, 3, 5, 8}},
+		{
+			messages: []string{},
+			expect:   []string{},
+		},
+		{
+			messages: []string{"Scadriel"},
+			expect:   []string{"Scadriel-processed"},
+		},
 	}...)
 
 	testCases := runCases
@@ -32,23 +46,40 @@ func Test(t *testing.T) {
 	failCount := 0
 
 	for _, test := range testCases {
-		actual := concurrentFib(test.n)
-		if !slices.Equal(actual, test.expected) {
+		fail := false
+		result := processMessages(test.messages)
+
+		if len(result) != len(test.expect) {
+			fail = true
+		}
+
+		counts := make(map[string]int)
+		for _, res := range result {
+			counts[res]++
+		}
+		for _, exp := range test.expect {
+			counts[exp]--
+			if counts[exp] < 0 {
+				fail = true
+			}
+		}
+
+		if fail {
 			failCount++
 			t.Errorf(`---------------------------------
 Test Failed:
-  n:        %v
+  inputs:   %v
   expected: %v
   actual:   %v
-`, test.n, test.expected, actual)
+  `, test.messages, test.expect, result)
 		} else {
 			passCount++
 			fmt.Printf(`---------------------------------
 Test Passed:
-  n:        %v
+  inputs:   %v
   expected: %v
   actual:   %v
-`, test.n, test.expected, actual)
+`, test.messages, test.expect, result)
 		}
 	}
 

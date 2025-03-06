@@ -33,16 +33,16 @@ func logEmail(email string) {
 	fmt.Println("Email:", email)
 }
 
-func test(sms []string, emails []string) {
+/*func test(sms []string, emails []string) {
 	fmt.Println("Starting...")
 
 	chSms, chEmails := sendToLogger(sms, emails)
 
 	logMessages(chEmails, chSms)
 	fmt.Println("===============================")
-}
+}*/
 
-func main() {
+/*func main() {
 	rand.Seed(0)
 	test(
 		[]string{
@@ -70,7 +70,7 @@ func main() {
 			"Can you believe this song?",
 		},
 	)
-}
+}*/
 
 func sendToLogger(sms, emails []string) (chSms, chEmails chan string) {
 	chSms = make(chan string)
