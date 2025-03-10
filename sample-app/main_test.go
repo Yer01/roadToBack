@@ -2,39 +2,24 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 )
 
-func TestProcessMessages(t *testing.T) {
+func Test(t *testing.T) {
 	type testCase struct {
-		messages []string
-		expect   []string
+		email string
+		count int
 	}
 
 	runCases := []testCase{
-		{
-			messages: []string{"Sunlit", "Man"},
-			expect:   []string{"Man-processed", "Sunlit-processed"},
-		},
-		{
-			messages: []string{"Nomad do you copy?"},
-			expect:   []string{"Nomad do you copy?-processed"},
-		},
-		{
-			messages: []string{"Scadriel", "Roshar", "Sel", "Nalthis", "Taldain"},
-			expect:   []string{"Taldain-processed", "Roshar-processed", "Sel-processed", "Nalthis-processed", "Scadriel-processed"},
-		},
+		{"norman@bates.com", 23},
+		{"marion@bates.com", 67},
 	}
 
 	submitCases := append(runCases, []testCase{
-		{
-			messages: []string{},
-			expect:   []string{},
-		},
-		{
-			messages: []string{"Scadriel"},
-			expect:   []string{"Scadriel-processed"},
-		},
+		{"lila@bates.com", 31},
+		{"sam@bates.com", 453},
 	}...)
 
 	testCases := runCases
@@ -46,40 +31,38 @@ func TestProcessMessages(t *testing.T) {
 	failCount := 0
 
 	for _, test := range testCases {
-		fail := false
-		result := processMessages(test.messages)
-
-		if len(result) != len(test.expect) {
-			fail = true
+		sc := safeCounter{
+			counts: make(map[string]int),
+			mu:     &sync.Mutex{},
 		}
-
-		counts := make(map[string]int)
-		for _, res := range result {
-			counts[res]++
+		var wg sync.WaitGroup
+		for i := 0; i < test.count; i++ {
+			wg.Add(1)
+			go func(email string) {
+				sc.inc(email)
+				wg.Done()
+			}(test.email)
 		}
-		for _, exp := range test.expect {
-			counts[exp]--
-			if counts[exp] < 0 {
-				fail = true
-			}
-		}
+		wg.Wait()
 
-		if fail {
+		if output := sc.val(test.email); output != test.count {
 			failCount++
 			t.Errorf(`---------------------------------
 Test Failed:
-  inputs:   %v
-  expected: %v
-  actual:   %v
-  `, test.messages, test.expect, result)
+  email: %v
+  count: %v
+  expected count: %v
+  actual count:   %v
+`, test.email, test.count, test.count, output)
 		} else {
 			passCount++
 			fmt.Printf(`---------------------------------
 Test Passed:
-  inputs:   %v
-  expected: %v
-  actual:   %v
-`, test.messages, test.expect, result)
+  email: %v
+  count: %v
+  expected count: %v
+  actual count:   %v
+`, test.email, test.count, test.count, output)
 		}
 	}
 
@@ -89,5 +72,4 @@ Test Passed:
 	} else {
 		fmt.Printf("%d passed, %d failed\n", passCount, failCount)
 	}
-
 }
